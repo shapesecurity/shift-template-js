@@ -23,37 +23,11 @@ let Shift = require('shift-ast/checked');
 
 let defaultMatcher = require('./default-matcher.js');
 let findNodes = require('./find-nodes.js');
+let { isNodeOrUnionOfNodes, isStatefulType } = require('./utilities.js');
 
 
 const entries = Object.entries || (o => Object.keys(o).map(k => [k, o[k]])); // needed on node 6
 
-
-// TODO dedup these with lazy-checked-clone
-// TODO consider splitting these and the utilities from https://github.com/shapesecurity/shift-reducer-js/blob/es2016/scripts/lib/utilities.js into their own project
-function isNodeOrUnionOfNodes(type) {
-  return type.typeName === 'Union' && type.arguments.every(isNodeOrUnionOfNodes) || spec.hasOwnProperty(type.typeName);
-}
-
-
-function isStatefulType(type) {
-  switch (type.typeName) {
-    case 'Enum':
-    case 'String':
-    case 'Number':
-    case 'Boolean':
-      return false;
-    case 'Maybe':
-    case 'List':
-      return isStatefulType(type.argument);
-    case 'Union':
-      return type.arguments.some(isStatefulType);
-    default:
-      if (isNodeOrUnionOfNodes(type)) {
-        return true;
-      }
-      throw new Error('unimplemented: type ' + type);
-  }
-}
 
 /*
   labels are of shape
