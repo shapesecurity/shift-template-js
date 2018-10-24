@@ -23,7 +23,7 @@ let Shift = require('shift-ast/checked');
 
 let defaultMatcher = require('./default-matcher.js');
 let findNodes = require('./find-nodes.js');
-let { isNodeOrUnionOfNodes, isStatefulType } = require('./utilities.js');
+let { isStatefulType } = require('./utilities.js');
 
 
 const entries = Object.entries || (o => Object.keys(o).map(k => [k, o[k]])); // needed on node 6
@@ -37,14 +37,13 @@ const entries = Object.entries || (o => Object.keys(o).map(k => [k, o[k]])); // 
   | { type: 'loop', variable: string, values: string }
 
   templateValues is of shape
-  [ name -> (node -> node) | boolean | [templateValues] ]
+  [ name -> (node => node) | boolean | [templateValues] ]
 
-  a 'bare' label must correspond to a `node -> node`
+  a 'bare' label must correspond to a `node => node`
   a 'if' label must correspond to a boolean
   a 'unless' label must correspond to a boolean
   a 'loop' (values) label must correspond to [templateValues]
 */
-
 
 class ReduceStructured {
   constructor(nodeToLabels, templateValues) {
@@ -97,7 +96,6 @@ class ReduceStructured {
     }
     throw new TypeError(`Unrecognized structured label type ${head.type}`);
   }
-
 }
 
 for (let [typeName, type] of entries(spec)) {
