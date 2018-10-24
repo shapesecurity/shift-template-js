@@ -26,7 +26,7 @@ let findNodes = require('./find-nodes.js');
 let { isStatefulType } = require('./utilities.js');
 
 
-const entries = Object.entries || (o => Object.keys(o).map(k => [k, o[k]])); // needed on node 6
+let entries = Object.entries || (o => Object.keys(o).map(k => [k, o[k]])); // needed on node 6
 
 
 /*
@@ -72,7 +72,7 @@ class ReduceStructured {
     if (head.type === 'loop') {
       let variable = head.variable;
       let values = this.templateValues.get(head.values);
-      if (!Array.isArray(values)) { // TODO should just be any iterable, I guess
+      if (!Array.isArray(values)) {
         throw new TypeError(`Loop values ${head.values} not found`);
       }
       let oldValues = this.templateValues;
@@ -100,7 +100,7 @@ class ReduceStructured {
 
 for (let [typeName, type] of entries(spec)) {
   ReduceStructured.prototype['reduce' + typeName] = function (node, data) {
-    let labels = this.nodeToLabels.has(node) ? this.nodeToLabels.get(node) : []; // TODO consider a multimap
+    let labels = this.nodeToLabels.has(node) ? this.nodeToLabels.get(node) : [];
 
     if (!this.currentNodeMayHaveStructuredLabel && labels.some(l => l.type !== 'bare')) {
       let label = labels.find(l => l.type !== 'bare');
@@ -199,10 +199,10 @@ module.exports = function applyStructuredTemplate(src, templateValues, { matcher
     }
     let labels = nodeToLabels.get(node);
     if (name.startsWith('if ')) {
-      labels.push({ type: 'if', condition: name.substring('if '.length) });
+      labels.push({ type: 'if', condition: name.substring('if '.length).trim() });
     } else if (name.startsWith('unless ')) {
-      labels.push({ type: 'unless', condition: name.substring('unless '.length) });
-    } else if (name.startsWith('for each')) {
+      labels.push({ type: 'unless', condition: name.substring('unless '.length).trim() });
+    } else if (name.startsWith('for each ')) {
       let split = name.substring('for each '.length).split(' of ');
       if (split.length !== 2) {
         throw new TypeError(`couldn't parse loop label "${name}"`);
