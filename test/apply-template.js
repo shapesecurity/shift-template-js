@@ -25,7 +25,7 @@ const { applyTemplate } = require('..');
 
 // There's no good way to tell `assert.deepStrictEqual` we don't care about prototypes, so just kill them.
 function stripPrototypes(obj, seen = new WeakSet) {
-  if (typeof obj !== 'object' || seen === null || seen.has(obj)) {
+  if (typeof obj !== 'object' || obj === null || seen.has(obj)) {
     return obj;
   }
   seen.add(obj);
