@@ -25,7 +25,6 @@ let defaultMatcher = require('./default-matcher.js');
 let findNodes = require('./find-nodes.js');
 
 
-
 // TODO dedup these with lazy-checked-clone
 // TODO consider splitting these and the utilities from https://github.com/shapesecurity/shift-reducer-js/blob/es2016/scripts/lib/utilities.js into their own project
 function isNodeOrUnionOfNodes(type) {
@@ -54,8 +53,6 @@ function isStatefulType(type) {
 }
 
 
-
-
 /*
   labels are of shape
     { type: 'bare', name: string }
@@ -73,7 +70,6 @@ function applyLabels(reducer, childThunk, remainingLabels) { // returns a list o
   if (remainingLabels.length === 0) {
     reducer.currentNodeMayHaveStructuredLabel = true;
     let result = childThunk();
-    reducer.currentNodeMayHaveStructuredLabel = false;
     return [result];
   }
   let [head, ...tail] = remainingLabels;
@@ -82,11 +78,10 @@ function applyLabels(reducer, childThunk, remainingLabels) { // returns a list o
     if (typeof condition !== 'boolean') {
       throw new TypeError(`Condition ${head.condition} not found`);
     }
-    if (condition) {
-      return applyLabels(reducer, childThunk, tail);
-    } else {
+    if (!condition) {
       return [];
     }
+    return applyLabels(reducer, childThunk, tail);
   }
   if (head.type === 'loop') {
     let variable = head.variable;
@@ -127,7 +122,7 @@ class ReduceStructured {
 
 for (let typeName of Object.keys(spec)) {
   let type = spec[typeName];
-  ReduceStructured.prototype['reduce' + typeName] = function(node, data) {
+  ReduceStructured.prototype['reduce' + typeName] = function (node, data) {
     let labels = this.nodeToLabels.has(node) ? this.nodeToLabels.get(node) : []; // TODO consider a multimap
     if (!this.currentNodeMayHaveStructuredLabel && labels.some(l => l.type === 'if')) {
       let label = labels.find(l => l.type === 'if');
@@ -137,6 +132,7 @@ for (let typeName of Object.keys(spec)) {
       let label = labels.find(l => l.type === 'loop');
       throw new TypeError(`Node of type ${node.type} iterating over ${label.values} is not in a loopable position`);
     }
+    this.currentNodeMayHaveStructuredLabel = false;
 
     let transformed = new Shift[typeName](type.fields.reduce((acc, field) => {
       if (field.name === 'type') {
