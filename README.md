@@ -19,7 +19,7 @@ npm install shift-template
 
 ## Usage
 
-This module exports two functions, `findNodes` and `applyTemplate`.
+This module exports three functions: `findNodes`, `applyTemplate`, and `applyStructuredTemplate`.
 
 `findNodes` takes the output of `parse{Script,Module}WithLocation` from [shift-parser](https://github.com/shapesecurity/shift-parser-js) as run on a source text which has comments in a certain format before nodes of interest. An optional second parameter to `findNodes` allows customizing the comment format; by default it is `/*# name #*/` or `/*# name # type #*/`. It returns a list of objects of the form `{ name, node, comment }`, where the first property is a name given in a marker comment, the second is the node which follows that marker, and the third an object with metadata about the comment.
 
@@ -90,6 +90,52 @@ The replacing functions are passed a node which has already had the template app
 
 A more sophisiticated example (a build-time implementation of an `autobind` class decorator) is in [example.js](example.js).
 
+
+`applyStructuredTemplate` extends the above by giving special meaning to labels of the form `if foo`, `unless foo`, and `for each foo of bar`. For `if` and `unless`, you should supply a property named `foo` holding a boolean in the second parameter. For `for each`, you should supply a property named `bar` holding a list of objects of the same shape as the full parameter.
+
+`if`-marked nodes are included as long as the condition is `true`; `unless` are included as long as it is `false`. These markers may only be included on nodes are in an optional or list position in the AST. In the case of a list of optional nodes, omitting the node is treated as omitting the entry from the list, rather than putting in an empty value in the list.
+
+For `for each` nodes, the node will be included multiple times. Each time it will be evaluated using the values supplied in the corresponding list, which prefixed with the variable name and `::`. This marker may only be included on nodes which are in list position in the AST.
+
+Multiple of these structural labels may be used on a single node.
+
+For example,
+
+```js
+let Shift = require('shift-ast/checked');
+
+let script = `
+  [
+    /*# if markerAtStart #*/
+      { prop: 'marker' },
+    /*# for each x of xs #*/
+      { prop: /*# x::prop #*/ null },
+    /*# unless markerAtStart #*/
+      { prop: 'marker' },
+  ]
+`;
+
+let templateValues = {
+  markerAtStart: false,
+  xs: [
+    { prop: () => new Shift.LiteralNumericExpression({ value: 1 }) },
+    { prop: () => new Shift.LiteralNumericExpression({ value: 2 }) },
+    { prop: () => new Shift.LiteralNumericExpression({ value: 3 }) },
+  ]
+};
+
+let replaced = applyStructuredTemplate(script, templateValues);
+
+```
+produces an AST corresponding to the script
+```js
+[
+  { prop: 1 },
+  { prop: 2 },
+  { prop: 3 },
+  { prop: 'marker' },
+]
+```
 
 ### Handling ambiguous markers
 
