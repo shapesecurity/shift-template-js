@@ -105,7 +105,7 @@ for (let [typeName, type] of entries(spec)) {
     if (!this.currentNodeMayHaveStructuredLabel && labels.some(l => l.type !== 'bare')) {
       let label = labels.find(l => l.type !== 'bare');
       if (label.type === 'if' || label.type === 'unless') {
-        throw new TypeError(`Node of type ${node.type} with condition ${label.string} is not in an omittable position`);
+        throw new TypeError(`Node of type ${node.type} with condition ${label.condition} is not in an omittable position`);
       } else if (label.type === 'loop') {
         throw new TypeError(`Node of type ${node.type} iterating over ${label.values} is not in a loopable position`);
       } else {
