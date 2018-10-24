@@ -71,7 +71,7 @@ function isStatefulType(type) {
 
 
 class ReduceStructured {
-  constructor(nodeToLabels, templateValues) { // TODO rename `templateValues`
+  constructor(nodeToLabels, templateValues) {
     this.nodeToLabels = nodeToLabels;
     this.templateValues = templateValues;
     this.currentNodeMayHaveStructuredLabel = false;
@@ -100,22 +100,22 @@ class ReduceStructured {
       if (!Array.isArray(values)) { // TODO should just be any iterable, I guess
         throw new TypeError(`Loop values ${head.values} not found`);
       }
-      let oldNodes = this.templateValues;
-      return [].concat.apply([], values.map(iterationMap => {
-        if (!(iterationMap instanceof Map)) {
-          iterationMap = entries(iterationMap);
+      let oldValues = this.templateValues;
+      return [].concat.apply([], values.map(perIterationTemplateValues => {
+        if (!(perIterationTemplateValues instanceof Map)) {
+          perIterationTemplateValues = entries(perIterationTemplateValues);
         }
-        let templateValuesAndIterationNodes = new Map(oldNodes);
-        for (let [key, value] of iterationMap) {
+        let merged = new Map(oldValues);
+        for (let [key, value] of perIterationTemplateValues) {
           let namespaced = variable + '::' + key;
-          if (templateValuesAndIterationNodes.has(namespaced)) {
+          if (merged.has(namespaced)) {
             throw new TypeError(`Name ${namespaced} already exists!`);
           }
-          templateValuesAndIterationNodes.set(namespaced, value);
+          merged.set(namespaced, value);
         }
-        this.templateValues = templateValuesAndIterationNodes;
+        this.templateValues = merged;
         let result = this.applyLabels(childThunk, tail);
-        this.templateValues = oldNodes;
+        this.templateValues = oldValues;
         return result;
       }));
     }
@@ -124,17 +124,19 @@ class ReduceStructured {
 
 }
 
-for (let typeName of Object.keys(spec)) {
-  let type = spec[typeName];
+for (let [typeName, type] of entries(spec)) {
   ReduceStructured.prototype['reduce' + typeName] = function (node, data) {
     let labels = this.nodeToLabels.has(node) ? this.nodeToLabels.get(node) : []; // TODO consider a multimap
-    if (!this.currentNodeMayHaveStructuredLabel && labels.some(l => l.type === 'if')) {
-      let label = labels.find(l => l.type === 'if');
-      throw new TypeError(`Node of type ${node.type} with condition ${label.string} is not in an omittable position`);
-    }
-    if (!this.currentNodeMayHaveStructuredLabel && labels.some(l => l.type === 'loop')) {
-      let label = labels.find(l => l.type === 'loop');
-      throw new TypeError(`Node of type ${node.type} iterating over ${label.values} is not in a loopable position`);
+
+    if (!this.currentNodeMayHaveStructuredLabel && labels.some(l => l.type !== 'bare')) {
+      let label = labels.find(l => l.type !== 'bare');
+      if (label.type === 'if') {
+        throw new TypeError(`Node of type ${node.type} with condition ${label.string} is not in an omittable position`);
+      } else if (label.type === 'loop') {
+        throw new TypeError(`Node of type ${node.type} iterating over ${label.values} is not in a loopable position`);
+      } else {
+        throw new Error('unreachable');
+      }
     }
     this.currentNodeMayHaveStructuredLabel = false;
 
