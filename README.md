@@ -95,7 +95,7 @@ A more sophisiticated example (a build-time implementation of an `autobind` clas
 
 `if`-marked nodes are included as long as the condition is `true`; `unless` are included as long as it is `false`. These markers may only be included on nodes that are in an optional or list position in the AST. In the case of a list of optional nodes, omitting the node is treated as omitting the entry from the list, rather than putting in an empty value in the list.
 
-For `for each` nodes, the node will be included multiple times. Each time it will be evaluated using the values supplied in the corresponding list, which prefixed with the variable name and `::`. This marker may only be included on nodes which are in list position in the AST.
+For `for each` nodes, the node will be included multiple times. Each time, the template will be evaluated using the values supplied in the corresponding list. The values may be referenced by  prefixing their name with the variable name and `::`. The `for each` marker may only be included on nodes which are in list position in the AST.
 
 Multiple of these structural labels may be used on a single node.
 
