@@ -25,6 +25,9 @@ let defaultMatcher = require('./default-matcher.js');
 let findNodes = require('./find-nodes.js');
 
 
+const entries = Object.entries || (o => Object.keys(o).map(k => [k, o[k]])); // needed on node 6
+
+
 // TODO dedup these with lazy-checked-clone
 // TODO consider splitting these and the utilities from https://github.com/shapesecurity/shift-reducer-js/blob/es2016/scripts/lib/utilities.js into their own project
 function isNodeOrUnionOfNodes(type) {
@@ -52,7 +55,6 @@ function isStatefulType(type) {
   }
 }
 
-
 /*
   labels are of shape
     { type: 'bare', name: string }
@@ -66,50 +68,6 @@ function isStatefulType(type) {
   a 'if' label must correspond to a boolean
   a 'loop' (values) label must correspond to [templateValues]
 */
-function applyLabels(reducer, childThunk, remainingLabels) { // returns a list of nodes
-  if (remainingLabels.length === 0) {
-    reducer.currentNodeMayHaveStructuredLabel = true;
-    let result = childThunk();
-    return [result];
-  }
-  let [head, ...tail] = remainingLabels;
-  if (head.type === 'if') {
-    let condition = reducer.templateValues.get(head.condition);
-    if (typeof condition !== 'boolean') {
-      throw new TypeError(`Condition ${head.condition} not found`);
-    }
-    if (!condition) {
-      return [];
-    }
-    return applyLabels(reducer, childThunk, tail);
-  }
-  if (head.type === 'loop') {
-    let variable = head.variable;
-    let values = reducer.templateValues.get(head.values);
-    if (!Array.isArray(values)) { // TODO should just be any iterable, I guess
-      throw new TypeError(`Loop values ${head.values} not found`);
-    }
-    let oldNodes = reducer.templateValues;
-    return [].concat.apply([], values.map(iterationMap => {
-      if (!(iterationMap instanceof Map)) {
-        iterationMap = Object.entries(iterationMap); // TODO this might not work on old node
-      }
-      let templateValuesAndIterationNodes = new Map(oldNodes);
-      for (let [key, value] of iterationMap) {
-        let namespaced = variable + '::' + key;
-        if (templateValuesAndIterationNodes.has(namespaced)) {
-          throw new TypeError(`Name ${namespaced} already exists!`);
-        }
-        templateValuesAndIterationNodes.set(namespaced, value);
-      }
-      reducer.templateValues = templateValuesAndIterationNodes;
-      let result = applyLabels(reducer, childThunk, tail);
-      reducer.templateValues = oldNodes;
-      return result;
-    }));
-  }
-  throw new TypeError(`Unrecognized structured label type ${head.type}`);
-}
 
 
 class ReduceStructured {
@@ -118,6 +76,52 @@ class ReduceStructured {
     this.templateValues = templateValues;
     this.currentNodeMayHaveStructuredLabel = false;
   }
+
+  applyLabels(childThunk, remainingLabels) { // returns a list of nodes
+    if (remainingLabels.length === 0) {
+      this.currentNodeMayHaveStructuredLabel = true;
+      let result = childThunk();
+      return [result];
+    }
+    let [head, ...tail] = remainingLabels;
+    if (head.type === 'if') {
+      let condition = this.templateValues.get(head.condition);
+      if (typeof condition !== 'boolean') {
+        throw new TypeError(`Condition ${head.condition} not found`);
+      }
+      if (!condition) {
+        return [];
+      }
+      return this.applyLabels(childThunk, tail);
+    }
+    if (head.type === 'loop') {
+      let variable = head.variable;
+      let values = this.templateValues.get(head.values);
+      if (!Array.isArray(values)) { // TODO should just be any iterable, I guess
+        throw new TypeError(`Loop values ${head.values} not found`);
+      }
+      let oldNodes = this.templateValues;
+      return [].concat.apply([], values.map(iterationMap => {
+        if (!(iterationMap instanceof Map)) {
+          iterationMap = entries(iterationMap);
+        }
+        let templateValuesAndIterationNodes = new Map(oldNodes);
+        for (let [key, value] of iterationMap) {
+          let namespaced = variable + '::' + key;
+          if (templateValuesAndIterationNodes.has(namespaced)) {
+            throw new TypeError(`Name ${namespaced} already exists!`);
+          }
+          templateValuesAndIterationNodes.set(namespaced, value);
+        }
+        this.templateValues = templateValuesAndIterationNodes;
+        let result = this.applyLabels(childThunk, tail);
+        this.templateValues = oldNodes;
+        return result;
+      }));
+    }
+    throw new TypeError(`Unrecognized structured label type ${head.type}`);
+  }
+
 }
 
 for (let typeName of Object.keys(spec)) {
@@ -152,7 +156,7 @@ for (let typeName of Object.keys(spec)) {
           let originalChild = node[field.name][childIndex];
           let childLabels = this.nodeToLabels.has(originalChild) ? this.nodeToLabels.get(originalChild) : [];
           let structuredLabels = childLabels.filter(l => l.type !== 'bare');
-          return applyLabels(this, childThunk, structuredLabels);
+          return this.applyLabels(childThunk, structuredLabels);
         })); // poor man's flatmap
         return acc;
       }
@@ -171,7 +175,7 @@ for (let typeName of Object.keys(spec)) {
           let label = structuredLabels.find(l => l.type === 'loop');
           throw new TypeError(`Node of type ${node.type} iterating over ${label.values} is not in a loopable position`);
         }
-        let result = applyLabels(this, childThunk, structuredLabels);
+        let result = this.applyLabels(childThunk, structuredLabels);
         if (result.length === 0) {
           acc[field.name] = null;
           return acc;
@@ -206,7 +210,7 @@ for (let typeName of Object.keys(spec)) {
 
 module.exports = function applyStructuredTemplate(src, templateValues, { matcher = defaultMatcher } = {}) {
   if (!(templateValues instanceof Map)) {
-    templateValues = new Map(Object.entries(templateValues)); // TODO this might not work on old node
+    templateValues = new Map(entries(templateValues));
   }
 
   let { tree, locations, comments } = parseScriptWithLocation(src);
