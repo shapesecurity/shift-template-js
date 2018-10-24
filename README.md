@@ -93,7 +93,7 @@ A more sophisiticated example (a build-time implementation of an `autobind` clas
 
 `applyStructuredTemplate` extends the above by giving special meaning to labels of the form `if foo`, `unless foo`, and `for each foo of bar`. For `if` and `unless`, you should supply a property named `foo` holding a boolean in the second parameter. For `for each`, you should supply a property named `bar` holding a list of objects of the same shape as the full parameter.
 
-`if`-marked nodes are included as long as the condition is `true`; `unless` are included as long as it is `false`. These markers may only be included on nodes are in an optional or list position in the AST. In the case of a list of optional nodes, omitting the node is treated as omitting the entry from the list, rather than putting in an empty value in the list.
+`if`-marked nodes are included as long as the condition is `true`; `unless` are included as long as it is `false`. These markers may only be included on nodes that are in an optional or list position in the AST. In the case of a list of optional nodes, omitting the node is treated as omitting the entry from the list, rather than putting in an empty value in the list.
 
 For `for each` nodes, the node will be included multiple times. Each time it will be evaluated using the values supplied in the corresponding list, which prefixed with the variable name and `::`. This marker may only be included on nodes which are in list position in the AST.
 
