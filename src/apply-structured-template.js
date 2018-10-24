@@ -59,6 +59,7 @@ function isStatefulType(type) {
   labels are of shape
     { type: 'bare', name: string }
   | { type: 'if', condition: string }
+  | { type: 'unless', condition: string }
   | { type: 'loop', variable: string, values: string }
 
   templateValues is of shape
@@ -66,6 +67,7 @@ function isStatefulType(type) {
 
   a 'bare' label must correspond to a `node -> node`
   a 'if' label must correspond to a boolean
+  a 'unless' label must correspond to a boolean
   a 'loop' (values) label must correspond to [templateValues]
 */
 
@@ -84,12 +86,12 @@ class ReduceStructured {
       return [result];
     }
     let [head, ...tail] = remainingLabels;
-    if (head.type === 'if') {
+    if (head.type === 'if' || head.type === 'unless') {
       let condition = this.templateValues.get(head.condition);
       if (typeof condition !== 'boolean') {
         throw new TypeError(`Condition ${head.condition} not found`);
       }
-      if (!condition) {
+      if (head.type === 'if' && !condition || head.type === 'unless' && condition) {
         return [];
       }
       return this.applyLabels(childThunk, tail);
@@ -130,7 +132,7 @@ for (let [typeName, type] of entries(spec)) {
 
     if (!this.currentNodeMayHaveStructuredLabel && labels.some(l => l.type !== 'bare')) {
       let label = labels.find(l => l.type !== 'bare');
-      if (label.type === 'if') {
+      if (label.type === 'if' || label.type === 'unless') {
         throw new TypeError(`Node of type ${node.type} with condition ${label.string} is not in an omittable position`);
       } else if (label.type === 'loop') {
         throw new TypeError(`Node of type ${node.type} iterating over ${label.values} is not in a loopable position`);
@@ -224,11 +226,12 @@ module.exports = function applyStructuredTemplate(src, templateValues, { matcher
       nodeToLabels.set(node, []);
     }
     let labels = nodeToLabels.get(node);
-    // TODO handle `unless`
     if (name.startsWith('if ')) {
-      labels.push({ type: 'if', condition: name.substring(3) });
+      labels.push({ type: 'if', condition: name.substring('if '.length) });
+    } else if (name.startsWith('unless ')) {
+      labels.push({ type: 'unless', condition: name.substring('unless '.length) });
     } else if (name.startsWith('for each')) {
-      let split = name.substring('for each'.length).split(' of ');
+      let split = name.substring('for each '.length).split(' of ');
       if (split.length !== 2) {
         throw new TypeError(`couldn't parse loop label "${name}"`);
       }
