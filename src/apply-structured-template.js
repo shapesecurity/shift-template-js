@@ -55,14 +55,13 @@ class ReduceStructured {
   applyLabels(childThunk, remainingLabels) { // returns a list of nodes
     if (remainingLabels.length === 0) {
       this.currentNodeMayHaveStructuredLabel = true;
-      let result = childThunk();
-      return [result];
+      return [childThunk()];
     }
     let [head, ...tail] = remainingLabels;
     if (head.type === 'if' || head.type === 'unless') {
       let condition = this.templateValues.get(head.condition);
       if (typeof condition !== 'boolean') {
-        throw new TypeError(`Condition ${head.condition} not found`);
+        throw new TypeError(`Condition ${JSON.stringify(head.condition)} not found`);
       }
       if (head.type === 'if' && !condition || head.type === 'unless' && condition) {
         return [];
@@ -73,7 +72,7 @@ class ReduceStructured {
       let variable = head.variable;
       let values = this.templateValues.get(head.values);
       if (!Array.isArray(values)) {
-        throw new TypeError(`Loop values ${head.values} not found`);
+        throw new TypeError(`Loop values ${JSON.stringify(head.values)} not found`);
       }
       let oldValues = this.templateValues;
       return [].concat.apply([], values.map(perIterationTemplateValues => {
@@ -84,7 +83,7 @@ class ReduceStructured {
         for (let [key, value] of perIterationTemplateValues) {
           let namespaced = variable + '::' + key;
           if (merged.has(namespaced)) {
-            throw new TypeError(`Name ${namespaced} already exists!`);
+            throw new TypeError(`Name ${JSON.stringify(namespaced)} already exists!`);
           }
           merged.set(namespaced, value);
         }
@@ -94,7 +93,7 @@ class ReduceStructured {
         return result;
       }));
     }
-    throw new TypeError(`Unrecognized structured label type ${head.type}`);
+    throw new Error('unreachable');
   }
 }
 
@@ -105,9 +104,9 @@ for (let [typeName, type] of entries(spec)) {
     if (!this.currentNodeMayHaveStructuredLabel && labels.some(l => l.type !== 'bare')) {
       let label = labels.find(l => l.type !== 'bare');
       if (label.type === 'if' || label.type === 'unless') {
-        throw new TypeError(`Node of type ${node.type} with condition ${label.condition} is not in an omittable position`);
+        throw new TypeError(`Node of type ${node.type} with condition ${JSON.stringify(label.condition)} is not in an omittable position`);
       } else if (label.type === 'loop') {
-        throw new TypeError(`Node of type ${node.type} iterating over ${label.values} is not in a loopable position`);
+        throw new TypeError(`Node of type ${node.type} iterating over ${JSON.stringify(label.values)} is not in a loopable position`);
       } else {
         throw new Error('unreachable');
       }
@@ -118,6 +117,7 @@ for (let [typeName, type] of entries(spec)) {
       if (field.name === 'type') {
         return acc;
       }
+
       if (!isStatefulType(field.type)) {
         acc[field.name] = node[field.name];
         return acc;
@@ -133,7 +133,7 @@ for (let [typeName, type] of entries(spec)) {
           let childLabels = this.nodeToLabels.has(originalChild) ? this.nodeToLabels.get(originalChild) : [];
           let structuredLabels = childLabels.filter(l => l.type !== 'bare');
           return this.applyLabels(childThunk, structuredLabels);
-        })); // poor man's flatmap
+        }));
         return acc;
       }
 
@@ -149,7 +149,7 @@ for (let [typeName, type] of entries(spec)) {
         let structuredLabels = childLabels.filter(l => l.type !== 'bare');
         if (structuredLabels.some(l => l.type === 'loop')) {
           let label = structuredLabels.find(l => l.type === 'loop');
-          throw new TypeError(`Node of type ${node.type} iterating over ${label.values} is not in a loopable position`);
+          throw new TypeError(`Node of type ${node.type} iterating over ${JSON.stringify(label.values)} is not in a loopable position`);
         }
         let result = this.applyLabels(childThunk, structuredLabels);
         if (result.length === 0) {
@@ -171,14 +171,14 @@ for (let [typeName, type] of entries(spec)) {
 
     let bareLabels = labels.filter(l => l.type === 'bare');
     if (bareLabels.length > 1) {
-      throw new TypeError(`Node has multiple labels: ${bareLabels[0].name}, ${bareLabels[1].name}`);
+      throw new TypeError(`Node has multiple labels: ${JSON.stringify(bareLabels[0].name)}, ${JSON.stringify(bareLabels[1].name)}`);
     }
     if (bareLabels.length === 0) {
       return transformed;
     }
     let replacer = this.templateValues.get(bareLabels[0].name);
     if (typeof replacer !== 'function') {
-      throw new TypeError(`Replacer ${bareLabels[0].name} not found`);
+      throw new TypeError(`Replacer ${JSON.stringify(bareLabels[0].name)} not found`);
     }
     return replacer(transformed);
   };
@@ -205,7 +205,7 @@ module.exports = function applyStructuredTemplate(src, templateValues, { matcher
     } else if (name.startsWith('for each ')) {
       let split = name.substring('for each '.length).split(' of ');
       if (split.length !== 2) {
-        throw new TypeError(`couldn't parse loop label "${name}"`);
+        throw new TypeError(`couldn't parse label ${JSON.stringify(name)}`);
       }
       labels.push({ type: 'loop', variable: split[0].trim(), values: split[1].trim() });
     } else {
