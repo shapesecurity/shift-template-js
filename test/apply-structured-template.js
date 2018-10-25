@@ -64,7 +64,7 @@ describe('applyStructuredTemplate', () => {
     checkApplication(source, { a: true, b: false, c: true, d: false }, expected);
   });
 
-  it('loop', () => {
+  it('for-each', () => {
     const source = '[start, /*# for each x of xs #*/ /*# x::node #*/ PLACEHOLDER, end]; ';
     const expected = '[start, 1, 2, 3, end]';
     checkApplication(source, { xs: [1, 2, 3].map(v => ({ node: () => new Shift.LiteralNumericExpression({ value: v }) })) }, expected);
@@ -76,9 +76,19 @@ describe('applyStructuredTemplate', () => {
     checkApplication(source, { includeName: true }, expected);
   });
 
-  it('maybe does not support loop', () => {
+  it('maybe does not support for-each', () => {
     const source = '(function /*# for each x of xs #*/ name(){});';
     fails(source, { xs: [] });
+  });
+
+  it('does not support if on mandatory nodes', () => {
+    const source = '(function name /*# if foo #*/ (){});';
+    fails(source, { foo: true });
+  });
+
+  it('does not support if on mandatory nodes', () => {
+    const source = '(function name /*# for each foo of foos #*/ (){});';
+    fails(source, { foos: [] });
   });
 
   it('nesting', () => {
