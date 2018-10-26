@@ -133,4 +133,15 @@ describe('applyStructuredTemplate', () => {
     const actual = applyStructuredTemplate(source, templateValues, { isModule: true });
     assert.deepStrictEqual(stripPrototypes(actual), stripPrototypes(expected));
   });
+
+  it('early errors not enforced before rendering', () => {
+    const source = ' /*# if test #*/ let a, a; ';
+    const expected = '';
+    checkApplication(source, { test: false }, expected);
+  });
+
+  it('early errors enforced after rendering', () => {
+    const source = ' /*# if test #*/ let a, a; ';
+    fails(source, { test: true });
+  });
 });

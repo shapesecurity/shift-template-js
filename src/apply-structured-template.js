@@ -16,7 +16,7 @@
 
 'use strict';
 
-let { parseScriptWithLocation, parseModuleWithLocation } = require('shift-parser');
+let { parseScriptWithLocation, parseModuleWithLocation, EarlyErrorChecker } = require('shift-parser');
 let { thunkedReduce } = require('shift-reducer');
 let spec = require('shift-spec').default;
 let Shift = require('shift-ast/checked');
@@ -189,7 +189,7 @@ module.exports = function applyStructuredTemplate(src, templateValues, { matcher
     templateValues = new Map(entries(templateValues));
   }
 
-  let { tree, locations, comments } = (isModule ? parseModuleWithLocation : parseScriptWithLocation)(src);
+  let { tree, locations, comments } = (isModule ? parseModuleWithLocation : parseScriptWithLocation)(src, { earlyErrors: false });
   let names = findNodes({ tree, locations, comments }, { matcher });
 
   let nodeToLabels = new Map;
@@ -213,5 +213,10 @@ module.exports = function applyStructuredTemplate(src, templateValues, { matcher
     }
   }
 
-  return thunkedReduce(new ReduceStructured(nodeToLabels, templateValues), tree);
+  let result = thunkedReduce(new ReduceStructured(nodeToLabels, templateValues), tree);
+  let earlyErrors = EarlyErrorChecker.check(result);
+  if (earlyErrors.length > 0) {
+    throw new Error(`early error after rendering template: ${earlyErrors[0].message}`);
+  }
+  return result;
 };
