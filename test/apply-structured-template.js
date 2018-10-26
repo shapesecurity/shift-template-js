@@ -86,7 +86,7 @@ describe('applyStructuredTemplate', () => {
     fails(source, { foo: true });
   });
 
-  it('does not support if on mandatory nodes', () => {
+  it('does not support for-each on mandatory nodes', () => {
     const source = '(function name /*# for each foo of foos #*/ (){});';
     fails(source, { foos: [] });
   });
