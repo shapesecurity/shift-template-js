@@ -16,18 +16,18 @@
 
 'use strict';
 
-let { parseScriptWithLocation } = require('shift-parser');
+let { parseScriptWithLocation, parseModuleWithLocation } = require('shift-parser');
 
 let defaultMatcher = require('./default-matcher.js');
 let findNodes = require('./find-nodes.js');
 let replace = require('./replace.js');
 
 
-module.exports = function applyTemplate(src, newNodes, { matcher = defaultMatcher } = {}) {
+module.exports = function applyTemplate(src, newNodes, { matcher = defaultMatcher, isModule = false } = {}) {
   // for now, newNodes is an object { [name]: node => node }
   // TODO allow other types: fn, string-keyed map
 
-  let { tree, locations, comments } = parseScriptWithLocation(src);
+  let { tree, locations, comments } = (isModule ? parseModuleWithLocation : parseScriptWithLocation)(src);
   let names = findNodes({ tree, locations, comments }, { matcher });
   let nodeToName = new Map(names.map(({ name, node }) => [node, name]));
 

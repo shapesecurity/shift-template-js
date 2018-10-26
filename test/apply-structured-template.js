@@ -19,7 +19,7 @@
 const assert = require('assert');
 
 const Shift = require('shift-ast/checked');
-const { parseScriptWithLocation } = require('shift-parser');
+const { parseScriptWithLocation, parseModuleWithLocation } = require('shift-parser');
 const { applyStructuredTemplate } = require('..');
 
 
@@ -124,5 +124,13 @@ describe('applyStructuredTemplate', () => {
       ],
     };
     checkApplication(source, templateValues, expected);
+  });
+
+  it('module', () => {
+    const source = ' /*# if one #*/ import one from "bar"; /*# unless one #*/ import two from "bar";';
+    const expected = parseModuleWithLocation('import two from "bar";').tree;
+    const templateValues = { one: false };
+    const actual = applyStructuredTemplate(source, templateValues, { isModule: true });
+    assert.deepStrictEqual(stripPrototypes(actual), stripPrototypes(expected));
   });
 });

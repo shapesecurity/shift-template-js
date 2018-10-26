@@ -16,7 +16,7 @@
 
 'use strict';
 
-let { parseScriptWithLocation } = require('shift-parser');
+let { parseScriptWithLocation, parseModuleWithLocation } = require('shift-parser');
 let { thunkedReduce } = require('shift-reducer');
 let spec = require('shift-spec').default;
 let Shift = require('shift-ast/checked');
@@ -184,12 +184,12 @@ for (let [typeName, type] of entries(spec)) {
   };
 }
 
-module.exports = function applyStructuredTemplate(src, templateValues, { matcher = defaultMatcher } = {}) {
+module.exports = function applyStructuredTemplate(src, templateValues, { matcher = defaultMatcher, isModule = false } = {}) {
   if (!(templateValues instanceof Map)) {
     templateValues = new Map(entries(templateValues));
   }
 
-  let { tree, locations, comments } = parseScriptWithLocation(src);
+  let { tree, locations, comments } = (isModule ? parseModuleWithLocation : parseScriptWithLocation)(src);
   let names = findNodes({ tree, locations, comments }, { matcher });
 
   let nodeToLabels = new Map;
