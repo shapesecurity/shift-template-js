@@ -19,13 +19,13 @@
 const assert = require('assert');
 
 const Shift = require('shift-ast/checked');
-const { parseScriptWithLocation } = require('shift-parser');
+const { parseScriptWithLocation, parseModuleWithLocation } = require('shift-parser');
 const { applyTemplate } = require('..');
 
 
 // There's no good way to tell `assert.deepStrictEqual` we don't care about prototypes, so just kill them.
 function stripPrototypes(obj, seen = new WeakSet) {
-  if (typeof obj !== 'object' || seen === null || seen.has(obj)) {
+  if (typeof obj !== 'object' || obj === null || seen.has(obj)) {
     return obj;
   }
   seen.add(obj);
@@ -62,6 +62,14 @@ describe('applyTemplate', () => {
     const source = ' /*# increment # LiteralNumericExpression #*/ 42 + /*# increment #*/ 128';
     const expected = '43 + 129';
     checkApplication(source, { increment: node => new Shift.LiteralNumericExpression({ value: node.value + 1 }) }, expected);
+  });
+
+  it('module', () => {
+    const source = 'import /*# label #*/ foo from "bar";';
+    const expected = parseModuleWithLocation('import baz from "bar";').tree;
+    const newNodes = { label: () => new Shift.BindingIdentifier({ name: 'baz' }) };
+    const actual = applyTemplate(source, newNodes, { isModule: true });
+    assert.deepStrictEqual(stripPrototypes(actual), stripPrototypes(expected));
   });
 });
 
