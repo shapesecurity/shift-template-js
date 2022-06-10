@@ -18,7 +18,7 @@
 
 let { parseScriptWithLocation, parseModuleWithLocation, EarlyErrorChecker } = require('shift-parser');
 let { thunkedReduce } = require('shift-reducer');
-let spec = require('shift-spec').default;
+let spec = require('shift-spec');
 let Shift = require('shift-ast/checked');
 
 let defaultMatcher = require('./default-matcher.js');
