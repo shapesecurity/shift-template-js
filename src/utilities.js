@@ -20,7 +20,7 @@ let spec = require('shift-spec');
 
 // TODO consider splitting these and the utilities from https://github.com/shapesecurity/shift-reducer-js/blob/es2016/scripts/lib/utilities.js into their own project
 function isNodeOrUnionOfNodes(type) {
-  return type.typeName === 'Union' && type.arguments.every(isNodeOrUnionOfNodes) || spec.hasOwnProperty(type.typeName);
+  return type.typeName === 'Union' && type.arguments.every(isNodeOrUnionOfNodes) || {}.hasOwnProperty.call(spec, type.typeName);
 }
 
 function isStatefulType(type) {
