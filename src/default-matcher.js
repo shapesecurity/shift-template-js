@@ -23,6 +23,9 @@ let validTypes = new Set(Object.keys(Shift));
 module.exports = function defaultMatcher(text) {
   let match = text.match(/^# ([^#]+) (?:# ([^#]+) )?#$/);
   if (match === null) {
+    if (text.match(/(^\s*#)|(#\s*$)/)) {
+      throw new Error('This comment looks kind of like a template comment, but not precisely; this is probably a bug.');
+    }
     return null;
   }
   if (typeof match[2] === 'string') {

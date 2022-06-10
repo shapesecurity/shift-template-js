@@ -97,4 +97,9 @@ describe('applyTemplate failure cases', () => {
       one: () => new Shift.LiteralNullExpression,
     });
   });
+
+  it('suspicious comment', () => {
+    const source = 'a + /*# label # */ b';
+    fails(source, {});
+  });
 });
