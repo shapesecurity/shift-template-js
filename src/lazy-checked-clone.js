@@ -20,7 +20,7 @@
 
 // compare https://github.com/shapesecurity/shift-reducer-js/blob/dda9f5105b3a08e6ac070c2bd5361e44ca224fd3/scripts/build/generate-lazy-clone-reducer.js
 
-let spec = require('shift-spec').default;
+let spec = require('shift-spec');
 let Shift = require('shift-ast/checked');
 
 let { isNodeOrUnionOfNodes, isStatefulType } = require('./utilities.js');

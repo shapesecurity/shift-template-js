@@ -16,7 +16,7 @@
 
 'use strict';
 
-let spec = require('shift-spec').default;
+let spec = require('shift-spec');
 
 // TODO consider splitting these and the utilities from https://github.com/shapesecurity/shift-reducer-js/blob/es2016/scripts/lib/utilities.js into their own project
 function isNodeOrUnionOfNodes(type) {

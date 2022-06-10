@@ -20,13 +20,13 @@
   ],
   "license": "Apache-2.0",
   "dependencies": {
-    "shift-ast": "5.0.0",
-    "shift-parser": "6.0.0",
-    "shift-reducer": "5.0.0",
-    "shift-spec": "2017.0.0"
+    "shift-ast": "7.0.0",
+    "shift-parser": "8.0.0",
+    "shift-reducer": "7.0.0",
+    "shift-spec": "2019.0.0"
   },
   "devDependencies": {
-    "eslint": "^5.4.0",
-    "mocha": "^5.2.0"
+    "eslint": "^8.17.0",
+    "mocha": "^10.0.0"
   }
 }
