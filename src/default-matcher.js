@@ -24,7 +24,7 @@ module.exports = function defaultMatcher(text) {
   let match = text.match(/^# ([^#]+) (?:# ([^#]+) )?#$/);
   if (match === null) {
     if (text.match(/(^\s*#)|(#\s*$)/)) {
-      throw new Error('This comment looks kind of like a template comment, but not precisely; this is probably a bug.');
+      throw new Error(`This comment looks kind of like a template comment, but not precisely; this is probably a bug: ${JSON.stringify(text)}`);
     }
     return null;
   }
